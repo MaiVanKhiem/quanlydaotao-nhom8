@@ -1,0 +1,7 @@
+.aider*
+.idea/
+*.iml
+target/
+build/
+*.class
+/quanlydaotao.iml
