@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=4">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>Đánh giá & Bảng điểm · Nhóm 8</title>
+
+    <link rel="stylesheet" href="/css/style.css?v=3">
+
+    <script src="/js/app.js?v=3" defer></script>
+    <script src="/js/ui.js?v=3" defer></script>
+</head>
+
+<body>
+
+    <script>
+    async function kiemTraNutYeuCau() {
+        const nut = document.getElementById("btnYeuCauChinhSua");
+        if (!nut) return;
+
+        try {
+            const response = await fetch("/api/auth/me", {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) return;
+
+            const user = await response.json();
+
+            nut.style.display =
+                user.role === "VIEWER" ? "inline-block" : "none";
+
+        } catch (error) {
+            console.error("Lỗi kiểm tra quyền:", error);
+        }
+    }
+
+    async function guiYeuCauChinhSua() {
+        const nut = document.getElementById("btnYeuCauChinhSua");
+
+        if (!confirm("Bạn muốn gửi yêu cầu cấp quyền chỉnh sửa đến Admin?")) {
+            return;
+        }
+
+        try {
+            nut.disabled = true;
+
+            const response = await fetch("/api/admin/request-edit", {
+                method: "POST",
+                credentials: "same-origin"
+            });
+
+            const message = await response.text();
+
+            if (!response.ok) {
+                alert("Không gửi được yêu cầu: " + message);
+                return;
+            }
+
+            alert("Đã gửi yêu cầu! Vui lòng chờ Admin phê duyệt.");
+
+        } catch (error) {
+            console.error(error);
+            alert("Không thể kết nối đến máy chủ.");
+        } finally {
+            nut.disabled = false;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", kiemTraNutYeuCau);
+    </script>
+
+    <script>
+        async function hienThiTenNguoiDung() {
+        try {
+            const response = await fetch("/api/auth/me", {
+            credentials: "same-origin"
+            });
+
+            if (response.status === 401 || response.status === 403) {
+            window.location.replace("/login.html");
+            return;
+            }
+
+            if (!response.ok) {
+            throw new Error("Không thể lấy thông tin tài khoản");
+            }
+
+            const user = await response.json();
+
+            document.getElementById("tenNguoiDung").textContent =
+            user.fullName || user.email || "Người dùng";
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("tenNguoiDung").textContent =
+            "Không tải được tên";
+        }
+        }
+
+        hienThiTenNguoiDung();
+    </script>
+
+    <script>
+    async function capNhatThongBaoAdmin() {
+        const chuong = document.getElementById("adminNotification");
+        const soThongBao = document.getElementById("adminNotificationCount");
+
+        if (!chuong || !soThongBao) return;
+
+        try {
+            const userResponse = await fetch("/api/auth/me", {
+                credentials: "same-origin"
+            });
+
+            if (!userResponse.ok) return;
+
+            const user = await userResponse.json();
+
+            if (user.role !== "ADMIN") {
+                soThongBao.style.display = "none";
+                return;
+            }
+
+            const response = await fetch("/api/admin/requests", {
+                method: "GET",
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error("HTTP " + response.status);
+            }
+
+            const requests = await response.json();
+
+            if (!Array.isArray(requests)) {
+                throw new Error("Dữ liệu yêu cầu không đúng định dạng");
+            }
+
+            const pendingCount = requests.filter(request =>
+                String(request.status || "").toUpperCase() === "PENDING"
+            ).length;
+
+            if (pendingCount > 0) {
+                soThongBao.textContent =
+                    pendingCount > 99 ? "99+" : String(pendingCount);
+
+                soThongBao.style.display = "block";
+            } else {
+                soThongBao.textContent = "";
+                soThongBao.style.display = "none";
+            }
+
+        } catch (error) {
+            console.error("Lỗi tải thông báo Admin:", error);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        capNhatThongBaoAdmin();
+
+        // Tự kiểm tra lại sau mỗi 15 giây
+        setInterval(capNhatThongBaoAdmin, 15000);
+    });
+    </script>
+
+
+
+    <script>
+        async function dangXuatNhom8() {
+        if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+            throw new Error("Lỗi HTTP " + response.status);
+            }
+
+            window.location.href = "/login.html";
+        } catch (error) {
+            alert("Đăng xuất thất bại: " + error.message);
+        }
+        }
+    </script>
+
+    <script>
+        document.getElementById("logoutLink")?.addEventListener("click", async function () {
+        if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+
+        try {
+            const response = await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+            }
+
+            window.location.replace("/login.html");
+        } catch (error) {
+            alert("Không thể đăng xuất: " + error.message);
+        }
+        });
+    </script>
+
+    <!-- THANH TRÊN -->
+    <header class="topbar">
+        <a class="brand" href="#overview">
+            <span class="brand-mark">N8</span>
+            <strong>QL ĐÀO TẠO TÍN CHỈ</strong>
+        </a>
+
+        <button
+            id="menuToggle"
+            class="top-button"
+            type="button"
+            aria-label="Đóng mở thanh điều hướng"
+            aria-expanded="true"
+        >
+            ☰
+        </button>
+
+        <div class="top-right">
+            <button
+                id="btnYeuCauChinhSua"
+                type="button"
+                onclick="guiYeuCauChinhSua()"
+                style="display:none; background:#f59e0b; color:white;
+                    border:none; border-radius:6px; padding:9px 12px;
+                    cursor:pointer; font-weight:bold;"
+            >
+                Yêu cầu quyền chỉnh sửa
+            </button>
+        <a id="adminNotification"
+        href="/admin.html"
+        title="Quản trị tài khoản"
+        style="display:none; align-items:center;
+                justify-content:center; position:relative;
+                width:32px; height:32px; color:white;
+                text-decoration:none; cursor:pointer;">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                width="22" height="22"
+                viewBox="0 0 24 24"
+                fill="none" stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                <path d="M10 21h4"/>
+            </svg>
+        </a>
+
+    <!-- Trạng thái API -->
+    <span id="apiStatus" class="connection">
+        Đang tải dữ liệu…
+    </span>
+
+            <a
+            id="adminNotification"
+            href="/admin.html"
+            title="Quản trị tài khoản"
+            style="
+                display:none;
+                position:relative;
+                align-items:center;
+                justify-content:center;
+                width:32px;
+                height:32px;
+                margin-right:12px;
+                color:white;
+                text-decoration:none;
+                cursor:pointer;
+            "
+            >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                <path d="M10 21h4"/>
+            </svg>
+
+            <span
+                style="
+                position:absolute;
+                top:1px;
+                right:1px;
+                width:8px;
+                height:8px;
+                background:#ef4444;
+                border-radius:50%;
+                "
+            ></span>
+
+            <span
+                id="adminNotificationCount"
+                style="
+                    display:none;
+                    position:absolute;
+                    top:-5px;
+                    right:-7px;
+                    min-width:18px;
+                    height:18px;
+                    padding:0 4px;
+                    border-radius:10px;
+                    background:#dc2626;
+                    color:white;
+                    font-size:11px;
+                    font-weight:bold;
+                    line-height:18px;
+                    text-align:center;
+                    pointer-events:none;
+                "
+            ></span>
+
+            </a>
+
+            <a
+                class="api-link"
+                href="/swagger-ui/index.html"
+                target="_blank"
+                rel="noopener"
+            >
+                Swagger API ↗
+            </a>
+
+            <span class="avatar">N8</span>
+            <div style="display:flex; flex-direction:column; align-items:flex-start;">
+            <strong id="tenNguoiDung">Đang tải...</strong>
+
+            <span
+            id="logoutLink"
+            onclick="dangXuatNhom8()"
+            style="cursor:pointer;font-size:12px;"
+            >
+                Đăng xuất
+            </span>
+
+            </div>
+        </div>
+    </header>
+
+    <button
+        id="sidebarBackdrop"
+        class="sidebar-backdrop"
+        aria-label="Đóng menu"
+        type="button"
+    ></button>
+
+    <!-- MENU TRÁI -->
+    <aside class="sidebar" id="sidebar">
+        <div class="nav-caption">
+            KHÔNG GIAN LÀM VIỆC
+        </div>
+
+        <nav aria-label="Điều hướng chính">
+            <a href="#overview" data-nav="overview">
+                <span class="nav-icon">⌂</span>
+                Trang tổng quan
+            </a>
+
+            <div class="nav-parent">
+                <span class="nav-icon">▤</span>
+                Đánh giá & bảng điểm
+                <span class="chevron">⌄</span>
+            </div>
+
+            <div class="subnav">
+                <a href="#gradebook" data-nav="gradebook">
+                    <span class="nav-dot"></span>
+                    Nhập điểm học phần
+                </a>
+
+                <a href="#components" data-nav="components">
+                    <span class="nav-dot"></span>
+                    Thành phần đánh giá
+                </a>
+
+                <a href="#scales" data-nav="scales">
+                    <span class="nav-dot"></span>
+                    Thang điểm quy đổi
+                </a>
+
+                <a href="#transcript" data-nav="transcript">
+                    <span class="nav-dot"></span>
+                    Bảng điểm sinh viên
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-guide">
+            <strong>Quy trình đánh giá</strong>
+            <p>
+                Chọn lớp → Cấu hình trọng số → Nhập điểm
+                → Tính tổng kết → Chốt điểm.
+            </p>
+        </div>
+
+        <div class="sidebar-footer">
+            <span class="school-mark">N8</span>
+
+            <div>
+                Quản lý đào tạo
+                <small>Học vụ · Đánh giá học tập</small>
+            </div>
+        </div>
+    </aside>
+
+    <!-- NỘI DUNG -->
+    <main class="workspace">
+        <div class="breadcrumb">
+            Trang chủ
+            <span>›</span>
+            Học vụ
+            <span>›</span>
+            <b id="breadcrumbTitle">Nhập điểm học phần</b>
+        </div>
+
+        <div class="page-heading">
+            <div class="title-icon">▤</div>
+
+            <div>
+                <h1 id="pageTitle">Đánh giá & bảng điểm</h1>
+                <p id="pageDescription">
+                    Quản lý điểm thành phần và tổng kết
+                    theo lớp học phần.
+                </p>
+            </div>
+
+            <time id="todayLabel"></time>
+        </div>
+
+        <div
+            id="message"
+            class="notice"
+            role="status"
+            aria-live="polite"
+            hidden
+        ></div>
+
+        <noscript>
+            <div class="notice error">
+                Bật JavaScript để tải dữ liệu và sử dụng
+                chức năng nhập điểm.
+            </div>
+        </noscript>
+
+        <!-- THẺ THỐNG KÊ -->
+        <section
+            class="panel summary-panel"
+            aria-label="Thống kê"
+        >
+            <div class="panel-title">
+                <h2>Tổng quan đánh giá</h2>
+                <span class="subtle">
+                    Thống kê chi tiết theo lớp đang chọn
+                </span>
+            </div>
+
+            <div class="stat-grid">
+                <article class="stat-card green">
+                    <span class="stat-icon">▦</span>
+
+                    <div>
+                        <span>Lớp học phần toàn hệ thống</span>
+                        <strong id="statClasses">—</strong>
+                        <small>Danh sách từ dữ liệu SQL</small>
+                    </div>
+                </article>
+
+                <article class="stat-card blue">
+                    <span class="stat-icon">♙</span>
+
+                    <div>
+                        <span>Sinh viên trong lớp</span>
+                        <strong id="statStudents">—</strong>
+                        <small id="statClassLabel">
+                            Chưa chọn lớp
+                        </small>
+                    </div>
+                </article>
+
+                <article class="stat-card purple">
+                    <span class="stat-icon">≡</span>
+
+                    <div>
+                        <span>Thành phần đánh giá</span>
+                        <strong id="statComponents">—</strong>
+                        <small>
+                            Cấu hình của lớp đang chọn
+                        </small>
+                    </div>
+                </article>
+
+                <article class="stat-card orange">
+                    <span class="stat-icon">✓</span>
+
+                    <div>
+                        <span>Sinh viên đã chốt</span>
+                        <strong id="statFinalized">—</strong>
+                        <small id="finalizedHint">
+                            Chưa chọn lớp
+                        </small>
+                    </div>
+                </article>
+
+                <article class="stat-card red">
+                    <span class="stat-icon">%</span>
+
+                    <div>
+                        <span>Tổng trọng số</span>
+                        <strong id="statWeight">—</strong>
+                        <small id="weightHint">
+                            Yêu cầu đủ 100%
+                        </small>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- CHỌN LỚP DÙNG CHUNG -->
+        <section
+            id="classContext"
+            class="panel class-context"
+        >
+            <div class="panel-title">
+                <h2>Chọn lớp học phần</h2>
+
+                <button
+                    id="reload"
+                    class="secondary small"
+                    type="button"
+                >
+                    ↻ Tải lại
+                </button>
+            </div>
+
+            <label for="classSelect" class="sr-only">
+                Lớp học phần
+            </label>
+
+            <select id="classSelect">
+                <option value="">
+                    — Chọn lớp học phần —
+                </option>
+            </select>
+
+            <p id="classInfo" class="muted">
+                Chọn lớp để bắt đầu.
+            </p>
+        </section>
+
+        <!-- TRANG TỔNG QUAN -->
+        <section data-page="overview" hidden>
+            <div class="panel">
+                <div class="panel-title">
+                    <h2>Danh sách lớp học phần</h2>
+
+                    <button
+                        id="catalogRefresh"
+                        type="button"
+                        class="secondary small"
+                    >
+                        ↻ Làm mới
+                    </button>
+                </div>
+
+                <div class="catalog-toolbar">
+                    <input
+                        id="catalogSearch"
+                        type="search"
+                        placeholder="Tìm mã lớp hoặc tên học phần…"
+                        aria-label="Tìm lớp học phần"
+                    >
+
+                    <select
+                        id="semesterFilter"
+                        aria-label="Lọc học kỳ"
+                    >
+                        <option value="">
+                            Tất cả học kỳ
+                        </option>
+                    </select>
+                </div>
+
+                <div id="catalogTable" class="table-wrap">
+                    <p class="muted">
+                        Đang tải lớp học phần…
+                    </p>
+                </div>
+
+                <div class="pagination">
+                    <span
+                        id="catalogCount"
+                        class="muted"
+                    ></span>
+
+                    <div>
+                        <button
+                            id="catalogPrev"
+                            class="secondary small"
+                            type="button"
+                        >
+                            ‹ Trước
+                        </button>
+
+                        <span
+                            id="catalogPage"
+                            class="page-number"
+                        >
+                            1
+                        </span>
+
+                        <button
+                            id="catalogNext"
+                            class="secondary small"
+                            type="button"
+                        >
+                            Sau ›
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice info">
+                Chọn <strong>Nhập điểm</strong> tại một lớp
+                để mở bảng đánh giá. Điểm chỉ xuất hiện trên
+                bảng điểm sinh viên sau khi được chốt.
+            </div>
+        </section>
+
+        <!-- TRANG NHẬP ĐIỂM -->
+        <section data-page="gradebook">
+            <div id="gradeEmpty" class="panel empty-state">
+                <span class="empty-icon">▤</span>
+
+                <h2>Chọn lớp để bắt đầu đánh giá</h2>
+
+                <p>
+                    Chọn một lớp học phần ở phía trên
+                    để xem sinh viên, nhập điểm và tính tổng kết.
+                </p>
+
+                <button type="button" data-nav="overview">
+                    Xem danh sách lớp
+                </button>
+            </div>
+
+            <section
+                id="boardSection"
+                class="panel"
+                hidden
+            >
+                <div class="panel-title">
+                    <div>
+                        <h2>Bảng điểm lớp học phần</h2>
+                        <p id="statistics" class="muted"></p>
+                    </div>
+
+                    <button
+                        id="openEnrollment"
+                        type="button"
+                        class="success"
+                    >
+                        ＋ Thêm sinh viên
+                    </button>
+                </div>
+
+                <div class="grade-toolbar">
+                    <input
+                        id="filterStudent"
+                        type="search"
+                        placeholder="Lọc mã hoặc tên sinh viên…"
+                        aria-label="Lọc sinh viên"
+                    >
+
+                    <div class="toolbar">
+                        <button id="saveGrades" type="button">
+                            ▣ Lưu điểm
+                        </button>
+
+                        <button
+                            id="calculate"
+                            type="button"
+                            class="secondary"
+                        >
+                            Tính toàn lớp
+                        </button>
+
+                        <button
+                            id="finalize"
+                            type="button"
+                            class="success"
+                        >
+                            ✓ Chốt toàn lớp
+                        </button>
+
+                        <button
+                            id="unlock"
+                            type="button"
+                            class="warning"
+                        >
+                            Mở điểm
+                        </button>
+
+                        <button
+                            id="exportBoard"
+                            type="button"
+                            class="secondary"
+                        >
+                            Xuất CSV
+                        </button>
+
+                        <button
+                            id="printPage"
+                            type="button"
+                            class="secondary"
+                        >
+                            In
+                        </button>
+                    </div>
+                </div>
+
+                <div class="notice info compact">
+                    Nhập điểm rồi bấm <strong>Lưu điểm</strong>.
+                    Để trống ô và lưu để xóa điểm đó.
+                    Điểm đã chốt được khóa chỉnh sửa.
+                </div>
+
+                <div
+                    id="boardTable"
+                    class="table-wrap"
+                ></div>
+
+                <div class="panel-footer">
+                    <span>
+                        <i class="legend-dot blue-dot"></i>
+                        Đang nhập
+
+                        <i class="legend-dot green-dot"></i>
+                        Đã chốt
+                    </span>
+
+                    <button
+                        type="button"
+                        data-nav="components"
+                        class="text-button"
+                    >
+                        Cấu hình thành phần điểm →
+                    </button>
+                </div>
+            </section>
+        </section>
+
+        <!-- TRANG THÀNH PHẦN ĐÁNH GIÁ -->
+        <section data-page="components" hidden>
+            <div
+                id="componentEmpty"
+                class="notice info"
+            >
+                Chọn lớp học phần ở phía trên
+                để cấu hình thành phần đánh giá.
+            </div>
+
+            <div
+                id="componentWorkspace"
+                class="split-layout"
+                hidden
+            >
+                <section class="panel">
+                    <div class="panel-title">
+                        <h2>Thêm / sửa thành phần</h2>
+                    </div>
+
+                    <p class="help">
+                        Mỗi lớp cần tổng trọng số 100%.
+                        Ngưỡng đạt áp dụng cho thành phần bắt buộc.
+                    </p>
+
+                    <form
+                        id="componentForm"
+                        class="form-grid"
+                    >
+                        <input type="hidden" name="id">
+
+                        <label>
+                            Mã thành phần
+                            <input
+                                name="component_code"
+                                maxlength="20"
+                                placeholder="CC, GK, CK…"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Tên thành phần
+                            <input
+                                name="component_name"
+                                maxlength="50"
+                                placeholder="Tên thành phần"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Trọng số (%)
+                            <input
+                                name="weight_percentage"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Điểm tối thiểu để đạt
+                            <input
+                                name="min_score"
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.01"
+                                value="0"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Điểm tối đa
+                            <input
+                                name="max_score"
+                                type="number"
+                                min="0.01"
+                                max="10"
+                                step="0.01"
+                                value="10"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Thứ tự hiển thị
+                            <input
+                                name="input_order"
+                                type="number"
+                                min="0"
+                                max="1000"
+                                step="1"
+                                value="1"
+                                required
+                            >
+                        </label>
+
+                        <label class="checkbox">
+                            <input
+                                name="is_required"
+                                type="checkbox"
+                                checked
+                            >
+                            Bắt buộc có điểm
+                        </label>
+
+                        <div class="form-actions">
+                            <button type="submit">
+                                Lưu thành phần
+                            </button>
+
+                            <button
+                                id="resetComponent"
+                                type="button"
+                                class="secondary"
+                            >
+                                Nhập mới
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-title">
+                        <h2>Danh sách thành phần đánh giá</h2>
+                    </div>
+
+                    <div
+                        id="componentTable"
+                        class="table-wrap"
+                    ></div>
+
+                    <div class="notice info compact">
+                        Sửa hoặc xóa thành phần sẽ yêu cầu
+                        tính lại tổng kết chưa chốt của lớp.
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <!-- TRANG THANG ĐIỂM -->
+        <section data-page="scales" hidden>
+            <div class="split-layout">
+                <section class="panel">
+                    <div class="panel-title">
+                        <h2>Thêm / sửa thang quy đổi</h2>
+                    </div>
+
+                    <p class="help">
+                        Khoảng điểm không chồng nhau và phải
+                        phủ đủ hệ 10 với bước 0,01.
+                    </p>
+
+                    <form id="scaleForm" class="form-grid">
+                        <input type="hidden" name="id">
+
+                        <label>
+                            Mã thang
+                            <input
+                                name="scale_code"
+                                maxlength="10"
+                                placeholder="A, B, C…"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Điểm chữ
+                            <input
+                                name="letter_grade"
+                                maxlength="2"
+                                placeholder="A, B+, C…"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Từ điểm
+                            <input
+                                name="min_score"
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.01"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Đến điểm
+                            <input
+                                name="max_score"
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.01"
+                                required
+                            >
+                        </label>
+
+                        <label>
+                            Điểm hệ 4
+                            <input
+                                name="gpa_value"
+                                type="number"
+                                min="0"
+                                max="4"
+                                step="0.01"
+                                required
+                            >
+                        </label>
+
+                        <label class="checkbox">
+                            <input
+                                name="is_pass"
+                                type="checkbox"
+                                checked
+                            >
+                            Đạt
+                        </label>
+
+                        <div class="form-actions">
+                            <button type="submit">
+                                Lưu thang điểm
+                            </button>
+
+                            <button
+                                id="resetScale"
+                                type="button"
+                                class="secondary"
+                            >
+                                Nhập mới
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-title">
+                        <h2>Danh sách thang điểm</h2>
+                    </div>
+
+                    <div
+                        id="scaleTable"
+                        class="table-wrap"
+                    ></div>
+
+                    <div class="notice warning-note compact">
+                        Thang điểm dùng chung. Cần mở các bảng điểm
+                        đã chốt trước khi thay đổi thang.
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <!-- TRANG BẢNG ĐIỂM SINH VIÊN -->
+        <section data-page="transcript" hidden>
+            <section class="panel">
+                <div class="panel-title">
+                    <h2>Tra cứu bảng điểm sinh viên</h2>
+                    <span class="tag">
+                        Chỉ học phần đã chốt
+                    </span>
+                </div>
+
+                <div class="inline-form">
+                    <input
+                        id="transcriptKeyword"
+                        type="search"
+                        placeholder="Nhập mã hoặc tên sinh viên…"
+                        aria-label="Tìm sinh viên"
+                    >
+
+                    <button
+                        id="searchTranscriptStudent"
+                        type="button"
+                    >
+                        Tìm sinh viên
+                    </button>
+                </div>
+
+                <div class="inline-form">
+                    <select
+                        id="transcriptStudent"
+                        aria-label="Chọn sinh viên"
+                    >
+                        <option value="">
+                            — Chọn sinh viên —
+                        </option>
+                    </select>
+
+                    <button
+                        id="showTranscript"
+                        type="button"
+                    >
+                        Xem bảng điểm
+                    </button>
+
+                    <button
+                        id="exportTranscript"
+                        type="button"
+                        class="secondary"
+                    >
+                        Xuất CSV
+                    </button>
+                </div>
+
+                <h3
+                    id="transcriptTitle"
+                    class="student-heading"
+                ></h3>
+
+                <div
+                    id="transcriptTable"
+                    class="table-wrap"
+                ></div>
+
+                <p class="help">
+                    Học phần chưa chốt chưa được đưa vào bảng điểm.
+                    Mỗi dòng tương ứng một kết quả học phần đã chốt.
+                </p>
+            </section>
+        </section>
+
+        <footer class="footer">
+            <strong>Nhóm 8</strong>
+            · Đánh giá học tập & bảng điểm
+
+            <span>Quản lý đào tạo tín chỉ</span>
+        </footer>
+    </main>
+
+    <!-- CỬA SỔ THÊM SINH VIÊN -->
+    <dialog
+        id="enrollmentDialog"
+        class="enrollment-dialog"
+    >
+        <div class="dialog-heading">
+            <div>
+                <h2>Thêm sinh viên vào lớp</h2>
+                <p class="muted">
+                    Tìm kiếm và chọn sinh viên có trong hệ thống.
+                </p>
+            </div>
+
+            <button
+                id="closeEnrollment"
+                type="button"
+                class="secondary small"
+                aria-label="Đóng"
+            >
+                ✕
+            </button>
+        </div>
+
+        <div
+            id="enrollmentNotice"
+            class="notice compact"
+            role="status"
+            hidden
+        ></div>
+
+        <div class="inline-form">
+            <input
+                id="studentKeyword"
+                type="search"
+                placeholder="Mã hoặc tên sinh viên…"
+                aria-label="Tìm sinh viên để thêm"
+            >
+
+            <button id="searchStudents" type="button">
+                Tìm kiếm
+            </button>
+        </div>
+
+        <label for="studentSelect">
+            Danh sách sinh viên
+        </label>
+
+        <select
+            id="studentSelect"
+            multiple
+            size="10"
+        ></select>
+
+        <p class="help">
+            Giữ Ctrl để chọn nhiều sinh viên.
+            Mỗi lần tìm hiển thị tối đa 100 kết quả.
+        </p>
+
+        <div class="dialog-footer">
+            <button
+                id="cancelEnrollment"
+                type="button"
+                class="secondary"
+            >
+                Đóng
+            </button>
+
+            <button
+                id="enrollStudents"
+                type="button"
+                class="success"
+            >
+                Thêm vào lớp
+            </button>
+        </div>
+    </dialog>
+     <script>
+    document.addEventListener("DOMContentLoaded", async function () {
+        const chuong = document.getElementById("adminNotification");
+
+        if (!chuong) {
+            console.error("Không tìm thấy biểu tượng chuông Admin");
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/auth/me", {
+                method: "GET",
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                chuong.style.display = "none";
+                return;
+            }
+
+            const user = await response.json();
+
+            if (user.role === "ADMIN") {
+                chuong.style.display = "inline-flex";
+            } else {
+                chuong.style.display = "none";
+            }
+
+        } catch (error) {
+            console.error("Lỗi kiểm tra tài khoản:", error);
+        }
+    });
+    </script>
+</body>
+</html>

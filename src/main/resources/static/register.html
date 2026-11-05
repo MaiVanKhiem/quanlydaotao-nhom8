@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg?v=4">
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Đăng ký - Nhóm 8</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(
+                135deg, #142e47, #287cb4
+            );
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+        }
+
+        .register-box {
+            width: 440px;
+            max-width: 100%;
+            background: white;
+            padding: 38px;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px #0003;
+        }
+
+        h1 {
+            text-align: center;
+            color: #173b5a;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            margin: 16px 0 8px;
+            font-weight: bold;
+            color: #263b50;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccd8e2;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #247bb5;
+            box-shadow: 0 0 0 3px #247bb51a;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #247bb5;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #155e93;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 14px;
+        }
+
+        a {
+            color: #247bb5;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        #message {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error {
+            color: #d63031;
+        }
+
+        .success {
+            color: #16815d;
+        }
+
+        .footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="register-box">
+
+        <h1>ĐĂNG KÝ TÀI KHOẢN</h1>
+
+        <p class="subtitle">
+            Hệ thống quản lý đào tạo tín chỉ
+            <br>
+            Nhóm 8
+        </p>
+
+        <form id="registerForm">
+
+            <label for="fullName">Họ và tên</label>
+            <input
+                type="text"
+                id="fullName"
+                placeholder="Nhập họ và tên"
+                maxlength="100"
+                autocomplete="name"
+                required
+            >
+
+            <label for="email">Email</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Nhập địa chỉ email"
+                autocomplete="email"
+                required
+            >
+
+            <label for="password">Mật khẩu</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Tối thiểu 8 ký tự"
+                minlength="8"
+                autocomplete="new-password"
+                required
+            >
+
+            <label for="confirmPassword">
+                Xác nhận mật khẩu
+            </label>
+            <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Nhập lại mật khẩu"
+                minlength="8"
+                autocomplete="new-password"
+                required
+            >
+
+            <div id="message" role="alert"></div>
+
+            <button type="submit" id="registerBtn">
+                Đăng ký tài khoản
+            </button>
+
+        </form>
+
+        <div class="login-link">
+            Đã có tài khoản?
+            <a href="/login.html">Đăng nhập ngay</a>
+        </div>
+
+        <div class="footer">
+            © 2026 Nhóm 8 - Quản lý đào tạo
+        </div>
+
+    </div>
+
+    <script>
+        const form = document.getElementById("registerForm");
+        const message = document.getElementById("message");
+        const button = document.getElementById("registerBtn");
+
+        function showMessage(text, type = "error") {
+            message.textContent = text;
+            message.className = type;
+        }
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const fullName = document
+                .getElementById("fullName")
+                .value.trim();
+
+            const email = document
+                .getElementById("email")
+                .value.trim();
+
+            const password = document
+                .getElementById("password")
+                .value;
+
+            const confirmPassword = document
+                .getElementById("confirmPassword")
+                .value;
+
+            if (password !== confirmPassword) {
+                showMessage("Mật khẩu xác nhận không khớp!");
+                return;
+            }
+
+            if (password.length < 8) {
+                showMessage("Mật khẩu phải có ít nhất 8 ký tự!");
+                return;
+            }
+
+            button.disabled = true;
+            showMessage("");
+
+            try {
+                const response = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({
+                        fullName: fullName,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message || "Đăng ký thất bại!"
+                    );
+                }
+
+                showMessage(
+                    "Đăng ký thành công! Đang chuyển đến đăng nhập...",
+                    "success"
+                );
+
+                setTimeout(function() {
+                    window.location.href = "/login.html";
+                }, 1500);
+
+            } catch (error) {
+                showMessage(error.message);
+            } finally {
+                button.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
