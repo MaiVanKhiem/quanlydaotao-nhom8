@@ -171,6 +171,57 @@ public class AdminController {
             "message", "Đã duyệt quyền chỉnh sửa")
         );
     }
+    @PostMapping("/requests/{id}/viewer")
+    public ResponseEntity<?> approveViewer(
+            @PathVariable UUID id,
+            HttpServletRequest request) {
+
+        UUID adminId = getUserId(request);
+
+        if (!isAdmin(adminId)) {
+            return forbidden();
+        }
+
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+            SELECT user_id
+            FROM dbo.permission_requests WITH (UPDLOCK, HOLDLOCK)
+            WHERE id = ? AND status = 'PENDING'
+            """, id);
+
+        if (rows.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                Map.of("message", "Yêu cầu không còn chờ duyệt")
+            );
+        }
+
+        UUID userId = UUID.fromString(
+            rows.get(0).get("user_id").toString()
+        );
+
+        int updated = jdbc.update("""
+            UPDATE dbo.permission_requests
+            SET status = 'APPROVED',
+                reviewed_at = SYSDATETIME(),
+                reviewed_by = ?
+            WHERE id = ? AND status = 'PENDING'
+            """, adminId, id);
+
+        if (updated != 1) {
+            return ResponseEntity.badRequest().body(
+                Map.of("message", "Yêu cầu đã được xử lý")
+            );
+        }
+
+        jdbc.update("""
+            UPDATE dbo.app_users
+            SET role = 'VIEWER'
+            WHERE id = ? AND role = 'VIEWER'
+            """, userId);
+
+        return ResponseEntity.ok(Map.of(
+            "message", "Đã duyệt quyền Người xem (VIEWER)"
+        ));
+    }
 
     @PostMapping("/requests/{id}/reject")
     public ResponseEntity<?> reject(
